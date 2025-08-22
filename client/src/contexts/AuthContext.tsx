@@ -41,9 +41,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
     api.get('/auth/me')
       .then(response => {
         setUser(response.data.user);
+        if (import.meta.env.DEV) {
+          console.log('User authenticated:', response.data.user.email);
+        }
       })
-      .catch(() => {
-        setUser(null);
+      .catch((error) => {
+        if (import.meta.env.DEV) {
+          console.log('Auth check failed:', error.response?.status);
+        }
+        
+        if (error.response?.status === 401) {
+          // Try to refresh the token
+          api.post('/auth/refresh')
+            .then(() => {
+              // Retry the auth check
+              return api.get('/auth/me');
+            })
+            .then(response => {
+              setUser(response.data.user);
+              if (import.meta.env.DEV) {
+                console.log('User authenticated after refresh:', response.data.user.email);
+              }
+            })
+            .catch((refreshError) => {
+              if (import.meta.env.DEV) {
+                console.log('Token refresh failed:', refreshError.response?.status);
+              }
+              setUser(null);
+            });
+        } else {
+          setUser(null);
+        }
       })
       .finally(() => {
         setLoading(false);

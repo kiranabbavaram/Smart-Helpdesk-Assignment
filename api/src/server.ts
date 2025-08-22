@@ -18,7 +18,19 @@ import notificationRoutes from './routes/notifications.js';
 const app = express();
 
 app.use(helmet());
-app.use(cors({ origin: config.corsOrigin, credentials: true }));
+
+// Configure CORS with proper cookie handling for development
+const corsOptions = process.env.NODE_ENV === 'development' 
+  ? { 
+      origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+      credentials: true 
+    }
+  : { 
+      origin: config.corsOrigin, 
+      credentials: true 
+    };
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 app.use(morgan('dev'));
